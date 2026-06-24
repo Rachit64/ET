@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(graphify query *)",
+      "Bash(rtk curl *)",
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 -c ' *)",
+      "Bash(graphify update *)",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('backend/app/main.py'\\).read\\(\\)\\); print\\('main.py OK'\\)\")",
+      "Bash(rtk read *)",
+      "Bash(rtk npx *)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('severity:',d['severity']\\); print\\('spr metrics keys:', list\\(d['spr']['metrics'].keys\\(\\)\\)\\); print\\('headings:', [l for l in d['governance'].split\\(chr\\(10\\)\\) if l.startswith\\('##'\\)]\\); print\\('---len:',len\\(d['governance']\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('days_of_cover:', d['metrics']['days_of_cover_remaining'], '| covered%:', d['metrics']['shortfall_covered_pct'], '| inventory pts:', len\\(d['daily_inventory']\\)\\)\")",
+      "Bash(kill %1)",
+      "Bash(pkill -f \"uvicorn backend.app.main\")",
+      "Bash(graphify explain *)",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('backend/app/main.py'\\).read\\(\\)\\); print\\('main.py syntax OK'\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('severity:',d['severity'],'| vol:',d['impact']['volume_at_risk_pct'],'| unavoidable:',d['shortage']['unavoidable']\\); print\\('reality:',d['shortage']['reality'][:120]\\)\")",
+      "Bash(curl -s -X POST localhost:8000/api/scenario/governance -H 'Content-Type: application/json' -d '{\"ctx\":{\"dynamic\":true,\"summary\":\"Saudi export collapse\",\"severity\":\"critical\",\"volume_at_risk_pct\":28.5,\"price_increase_bbl\":45,\"fuel_price_rise_pct\":40,\"power_stress_pct\":70,\"gdp_delta_pct\":-1.2,\"cpi_delta_pct\":3.0,\"shortage_reality\":\"India cannot replace lost supply\",\"shortage_unavoidable\":true}}')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('severity:',d['severity'],'| unavoidable:',d['shortage_unavoidable']\\); print\\('headings:',[l for l in d['governance'].split\\(chr\\(10\\)\\) if l.startswith\\('##'\\)]\\)\")",
+      "Bash(timeout 180 npx vite build)"
+    ]
+  }
+}

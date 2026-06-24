@@ -1,0 +1,217 @@
+{
+  ".oxlintrc.json": {
+    "mtime": 1782282214.6973405,
+    "ast_hash": "5e6e3cea3e89137071c142dd7835b0ef",
+    "semantic_hash": "5e6e3cea3e89137071c142dd7835b0ef"
+  },
+  "backend/ais_client.py": {
+    "mtime": 1782282272.6267152,
+    "ast_hash": "77b2b41400599614eb778f6376805d68",
+    "semantic_hash": "77b2b41400599614eb778f6376805d68"
+  },
+  "backend/app/main.py": {
+    "mtime": 1782319966.1295648,
+    "ast_hash": "20c29fe0ec2de5d788a2014a6027ba0b",
+    "semantic_hash": ""
+  },
+  "backend/app/services/ais.py": {
+    "mtime": 1782282250.8831592,
+    "ast_hash": "18667803dae632b33337043f5d23731c",
+    "semantic_hash": "18667803dae632b33337043f5d23731c"
+  },
+  "backend/app/services/graph.py": {
+    "mtime": 1782282299.8883183,
+    "ast_hash": "c644fdf5bbfeac495fefd61770a9105c",
+    "semantic_hash": "c644fdf5bbfeac495fefd61770a9105c"
+  },
+  "backend/app/services/orchestrator.py": {
+    "mtime": 1782292014.4359918,
+    "ast_hash": "79456fc5de812fa880238d4f1d00f8c9",
+    "semantic_hash": "79456fc5de812fa880238d4f1d00f8c9"
+  },
+  "backend/app/services/risk.py": {
+    "mtime": 1782313691.1589205,
+    "ast_hash": "05f37a2667fa4f2d449d7a7b1306c0f6",
+    "semantic_hash": "05f37a2667fa4f2d449d7a7b1306c0f6"
+  },
+  "backend/app/services/scenarios.py": {
+    "mtime": 1782282271.405039,
+    "ast_hash": "1f4d026ac4945acb0b8c65999c39e649",
+    "semantic_hash": "1f4d026ac4945acb0b8c65999c39e649"
+  },
+  "backend/app/services/spr.py": {
+    "mtime": 1782282290.101165,
+    "ast_hash": "11d194a4852c43e854d38e891e8c97e0",
+    "semantic_hash": "11d194a4852c43e854d38e891e8c97e0"
+  },
+  "backend/choke_points.py": {
+    "mtime": 1782282265.2048175,
+    "ast_hash": "08b1ce77e9ede0f0a6bc703b3347b740",
+    "semantic_hash": "08b1ce77e9ede0f0a6bc703b3347b740"
+  },
+  "backend/main.py": {
+    "mtime": 1782282279.313703,
+    "ast_hash": "9bbcc9054b44bea9c358566485d52084",
+    "semantic_hash": "9bbcc9054b44bea9c358566485d52084"
+  },
+  "frontend/src/App.jsx": {
+    "mtime": 1782282407.9205854,
+    "ast_hash": "044aa91c71f210126b10b7a491ee57d4",
+    "semantic_hash": "044aa91c71f210126b10b7a491ee57d4"
+  },
+  "frontend/src/components/KnowledgeGraph.jsx": {
+    "mtime": 1782282387.332891,
+    "ast_hash": "0330e9f5e962a10d1460db3b2b925ba5",
+    "semantic_hash": "0330e9f5e962a10d1460db3b2b925ba5"
+  },
+  "frontend/src/components/Map.jsx": {
+    "mtime": 1782282376.8660467,
+    "ast_hash": "bad2d4f04dd8b221f12808306c8fa27e",
+    "semantic_hash": "bad2d4f04dd8b221f12808306c8fa27e"
+  },
+  "package.json": {
+    "mtime": 1782314938.3763347,
+    "ast_hash": "6e0edcf00aab4d56bd869db9ab95152b",
+    "semantic_hash": "6e0edcf00aab4d56bd869db9ab95152b"
+  },
+  "postcss.config.js": {
+    "mtime": 1782283275.3482738,
+    "ast_hash": "8df3367cc70e1ff95e68179091801ad4",
+    "semantic_hash": "8df3367cc70e1ff95e68179091801ad4"
+  },
+  "src/App.jsx": {
+    "mtime": 1782292368.259848,
+    "ast_hash": "fc883e3c4119b7bbd9f0f9c6a3a20dfa",
+    "semantic_hash": "fc883e3c4119b7bbd9f0f9c6a3a20dfa"
+  },
+  "src/components/AgentReasoningPanel.jsx": {
+    "mtime": 1782282738.4313319,
+    "ast_hash": "e82f887ea7621916a0f8685914369944",
+    "semantic_hash": "e82f887ea7621916a0f8685914369944"
+  },
+  "src/components/ChatCopilot.jsx": {
+    "mtime": 1782284577.2787895,
+    "ast_hash": "d6fcc1035f39b7ba9d49d179b00f305c",
+    "semantic_hash": "d6fcc1035f39b7ba9d49d179b00f305c"
+  },
+  "src/components/KnowledgeGraphView.jsx": {
+    "mtime": 1782292076.4702482,
+    "ast_hash": "288a5d88cbe143fb909ab534f677f4f0",
+    "semantic_hash": "288a5d88cbe143fb909ab534f677f4f0"
+  },
+  "src/components/MapContainer.jsx": {
+    "mtime": 1782292192.8987348,
+    "ast_hash": "21fe29182afc54b44b396852c7d0c9e3",
+    "semantic_hash": "21fe29182afc54b44b396852c7d0c9e3"
+  },
+  "src/components/RecommendationCard.jsx": {
+    "mtime": 1782282356.928568,
+    "ast_hash": "856d779d042fffb2c4704433460301e1",
+    "semantic_hash": "856d779d042fffb2c4704433460301e1"
+  },
+  "src/components/RiskSignalFeed.jsx": {
+    "mtime": 1782282337.3481505,
+    "ast_hash": "12a663f113496e2082fac4fb4a7418c6",
+    "semantic_hash": "12a663f113496e2082fac4fb4a7418c6"
+  },
+  "src/components/ScenarioLab.jsx": {
+    "mtime": 1782320110.5019853,
+    "ast_hash": "dca9a9ab004be8da8e4200afa29ebc13",
+    "semantic_hash": ""
+  },
+  "src/config/chokePoints.js": {
+    "mtime": 1782282329.3131092,
+    "ast_hash": "ea5fbb8871875cc5ce0813aed8ef9209",
+    "semantic_hash": "ea5fbb8871875cc5ce0813aed8ef9209"
+  },
+  "src/hooks/useAISStream.js": {
+    "mtime": 1782282983.467441,
+    "ast_hash": "d006411099259ca782a7a576d4f927c0",
+    "semantic_hash": "d006411099259ca782a7a576d4f927c0"
+  },
+  "src/main.jsx": {
+    "mtime": 1782282214.6991222,
+    "ast_hash": "e13723e2574429d9a6d849727e3ff695",
+    "semantic_hash": "e13723e2574429d9a6d849727e3ff695"
+  },
+  "start.sh": {
+    "mtime": 1782282428.2829676,
+    "ast_hash": "c370155e56d431b4d698aa8b90211245",
+    "semantic_hash": "c370155e56d431b4d698aa8b90211245"
+  },
+  "vite.config.js": {
+    "mtime": 1782283279.8538165,
+    "ast_hash": "88439104b3c207f17d33ef3160e3b080",
+    "semantic_hash": "88439104b3c207f17d33ef3160e3b080"
+  },
+  "README.md": {
+    "mtime": 1782282214.6970618,
+    "ast_hash": "75eb386f17caf77fd6fe3ce1d90968ee",
+    "semantic_hash": "75eb386f17caf77fd6fe3ce1d90968ee"
+  },
+  "index.html": {
+    "mtime": 1782282355.1619818,
+    "ast_hash": "01f2f42d3c550e9b10d0bb59d3c8c341",
+    "semantic_hash": "01f2f42d3c550e9b10d0bb59d3c8c341"
+  },
+  "public/favicon.svg": {
+    "mtime": 1782282214.6980817,
+    "ast_hash": "7e840862161341271697daa99a40d76b",
+    "semantic_hash": "7e840862161341271697daa99a40d76b"
+  },
+  "public/icons.svg": {
+    "mtime": 1782282214.6982229,
+    "ast_hash": "3b4fcfcf393eca4d264dca4a4663bc37",
+    "semantic_hash": "3b4fcfcf393eca4d264dca4a4663bc37"
+  },
+  "src/assets/hero.png": {
+    "mtime": 1782282214.698686,
+    "ast_hash": "aead493361b27e7510691c5d7072dfc1",
+    "semantic_hash": "aead493361b27e7510691c5d7072dfc1"
+  },
+  "src/assets/react.svg": {
+    "mtime": 1782282214.698811,
+    "ast_hash": "f0402b67b6ce880f65666bb49e841696",
+    "semantic_hash": "f0402b67b6ce880f65666bb49e841696"
+  },
+  "src/assets/vite.svg": {
+    "mtime": 1782282214.6989105,
+    "ast_hash": "9960a24288958394ac50e57ff638b036",
+    "semantic_hash": "9960a24288958394ac50e57ff638b036"
+  },
+  ".claude/settings.json": {
+    "mtime": 1782289211.0261784,
+    "ast_hash": "e1073342e958ac9f00716938c8f165e3",
+    "semantic_hash": "e1073342e958ac9f00716938c8f165e3"
+  },
+  "CLAUDE.md": {
+    "mtime": 1782289211.025939,
+    "ast_hash": "82efb97a359f5c7290bf2513d14686be",
+    "semantic_hash": "82efb97a359f5c7290bf2513d14686be"
+  },
+  "backend/app/services/currency.py": {
+    "mtime": 1782292061.0828884,
+    "ast_hash": "6a61d00f6d128aaf8f9c6dbc16003ddd",
+    "semantic_hash": "6a61d00f6d128aaf8f9c6dbc16003ddd"
+  },
+  "src/components/GlobeMap.jsx": {
+    "mtime": 1782314953.4499583,
+    "ast_hash": "52ad79db7e093c88a8a208c1b27073bf",
+    "semantic_hash": "52ad79db7e093c88a8a208c1b27073bf"
+  },
+  "src/components/ScenarioControls.jsx": {
+    "mtime": 1782320032.7358997,
+    "ast_hash": "24516a0615617b15a30e658fe9a09a31",
+    "semantic_hash": ""
+  },
+  "src/hooks/useScenario.js": {
+    "mtime": 1782320009.1962223,
+    "ast_hash": "f361d51ee70cdab37eed14abe2633e04",
+    "semantic_hash": ""
+  },
+  ".claude/settings.local.json": {
+    "mtime": 1782320755.953554,
+    "ast_hash": "cc47a8c97c8b8ad7f1c65791f35bfa63",
+    "semantic_hash": ""
+  }
+}
