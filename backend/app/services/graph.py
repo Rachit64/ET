@@ -2,10 +2,14 @@ import networkx as nx
 import requests
 import json
 import logging
+import os
 from typing import Dict, List, Any
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Gemini Configuration
-GEMINI_API_KEY = "AQ.Ab8RN6KEELLV6xEDcyeQcKCUecGwM4PGln_kUiN1O9R33zM4Wg"
+GEMINI_API_KEY = os.getenv("GRAPH_GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +124,10 @@ class KnowledgeGraphService:
 
     def execute_rag_query(self, query: str) -> str:
         """Run a Graph-RAG query using NetworkX node traversal and Gemini."""
+        if not GEMINI_API_KEY:
+            logger.error("GEMINI_API_KEY / GRAPH_GEMINI_API_KEY environment variable is not set. Graph RAG query cannot run.")
+            return "Sorry, I encountered an issue querying the RAG copilot: API key is not configured."
+
         # 1. Retrieve relevant node data by matching query keywords
         relevant_context = []
         query_lower = query.lower()

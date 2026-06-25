@@ -5,13 +5,17 @@ import requests
 import json
 import logging
 import random
+import os
 from collections import deque
 from datetime import datetime, timedelta
 from typing import Dict, List, Any
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # EIA and Gemini Configuration
-EIA_API_KEY = "NpvEsbZ7tefWoXj5SYrQEPRT5YyADH0cd8x6Rng4"
-GEMINI_API_KEY = "AQ.Ab8RN6KCGkynNxFab8geBhFmlZ6X0YDbsQpPgpQl2hWmfCgwKw"
+EIA_API_KEY = os.getenv("EIA_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 
 # Models tried in order by gemini_generate(): the first is primary, the rest are
 # silent fallbacks. If the primary exhausts its retries (transient 5xx/429),
@@ -99,15 +103,52 @@ DEFAULT_SIGNALS = [
     }
 ]
 
+# ---------------------------------------------------------------------------
+# Region-aware GDELT queries. Each choke point is paired with the geopolitics of
+# the waters/countries immediately around it, so the news we surface is actually
+# relevant to that corridor (and its neighbourhood) rather than generic oil
+# headlines. Gemini then scores the *final* disruption risk for each article.
+# ---------------------------------------------------------------------------
+# Gemini scores genuine disruptions high and off-topic articles (that a broad
+# region query incidentally matches) low, so we use its final risk score to gate
+# noise out of the feed: anything below this disruption probability is dropped.
+MIN_SIGNAL_PROBABILITY = 20
+
+CHOKE_POINT_QUERIES = {
+    "Strait of Hormuz": (
+        '(Hormuz OR Iran OR "Persian Gulf" OR Oman OR "Bandar Abbas" OR UAE OR Qatar) '
+        '(oil OR crude OR tanker OR shipping OR naval OR sanctions OR blockade OR seizure OR attack)'
+    ),
+    "Bab-el-Mandeb": (
+        '(Houthi OR Yemen OR "Red Sea" OR "Bab-el-Mandeb" OR Djibouti OR "Gulf of Aden" OR Eritrea) '
+        '(oil OR crude OR tanker OR shipping OR drone OR missile OR attack OR vessel OR convoy)'
+    ),
+    "Suez Canal": (
+        '("Suez Canal" OR Egypt OR "Port Said" OR Ismailia) '
+        '(oil OR crude OR tanker OR shipping OR transit OR blockage OR grounding OR delay OR toll)'
+    ),
+    "Strait of Malacca": (
+        '(Malacca OR Singapore OR Indonesia OR Malaysia OR "South China Sea") '
+        '(oil OR crude OR tanker OR shipping OR piracy OR robbery OR vessel OR "ship-to-ship")'
+    ),
+}
+
+
 class RiskAgent:
     def __init__(self):
         self.cached_signals: List[Dict[str, Any]] = DEFAULT_SIGNALS
         self.brent_price = 84.36
         self.wti_price = 84.65
         self.last_update = datetime.now()
+        # Guards against two signal updates running at once (background loop +
+        # manual /api/refresh-signals), which otherwise bursts GDELT into 429s.
+        self._update_lock = threading.Lock()
 
     def fetch_eia_prices(self):
         """Fetch crude oil spot prices from EIA API."""
+        if not EIA_API_KEY:
+            logger.warning("EIA_API_KEY environment variable is not set. EIA spot price queries will fail.")
+            return
         try:
             url = f"https://api.eia.gov/v2/petroleum/pri/spt/data/?api_key={EIA_API_KEY}&frequency=daily&data[]=value&sort[0][column]=period&sort[0][direction]=desc&length=5"
             resp = requests.get(url, timeout=10)
@@ -122,81 +163,125 @@ class RiskAgent:
         except Exception as e:
             logger.error(f"Failed to fetch EIA prices: {e}")
 
-    def fetch_gdelt_news(self) -> List[Dict[str, Any]]:
-        """Fetch oil/crude/shipping/blockade news articles from GDELT."""
-        try:
-            # Query GDELT for recent shipping/oil disruption news
-            query = "(oil OR crude OR geopolitical OR shipping OR blockade OR tankers)"
-            url = f"https://api.gdeltproject.org/api/v2/doc/doc?query={query}&mode=ArtList&format=JSON&maxresults=10"
-            resp = requests.get(url, timeout=10)
-            if resp.status_code == 200:
-                articles = resp.json().get("articles", [])
-                return articles
-        except Exception as e:
-            logger.error(f"Failed to fetch GDELT news: {e}")
+    @staticmethod
+    def _parse_article_date(article: Dict[str, Any]):
+        """Parse a GDELT article's publish date (``seendate``) into an ISO
+        timestamp plus its age in days. GDELT uses ``YYYYMMDDTHHMMSSZ``; we also
+        accept plain ISO. Returns ``(None, None)`` when the date is missing or
+        unparseable."""
+        raw = (article.get("seendate") or "").strip()
+        for fmt in ("%Y%m%dT%H%M%SZ", "%Y-%m-%dT%H:%M:%SZ"):
+            try:
+                dt = datetime.strptime(raw, fmt)
+                age_days = (datetime.utcnow() - dt).total_seconds() / 86400.0
+                return dt.strftime("%Y-%m-%dT%H:%M:%SZ"), age_days
+            except (ValueError, TypeError):
+                continue
+        return None, None
+
+    def fetch_choke_point_news(self, corridor: str, query: str,
+                               max_articles: int = 5) -> List[Dict[str, Any]]:
+        """Fetch the most recent news for one choke point and the region around
+        it from GDELT (last 5 days, English, newest first).
+
+        GDELT throttles aggressively (~1 request / 5s per IP), so transient 429s
+        and read timeouts are retried with backoff before giving up."""
+        params = {
+            "query": f"{query} sourcelang:english",
+            "mode": "ArtList",
+            "format": "JSON",
+            "maxrecords": max_articles,
+            "sort": "DateDesc",
+            "timespan": "5d",
+        }
+        url = "https://api.gdeltproject.org/api/v2/doc/doc"
+
+        for attempt in range(3):
+            try:
+                resp = requests.get(url, params=params, timeout=15)
+                if resp.status_code == 200:
+                    # GDELT occasionally returns HTML on throttling — guard json().
+                    try:
+                        return resp.json().get("articles", []) or []
+                    except ValueError:
+                        logger.warning(f"GDELT returned non-JSON for {corridor}; retrying…")
+                elif resp.status_code == 429:
+                    wait = 5.0 * (attempt + 1)
+                    logger.warning(f"GDELT 429 for {corridor}; retry in {wait:.0f}s…")
+                    time.sleep(wait)
+                    continue
+                else:
+                    logger.warning(f"GDELT HTTP {resp.status_code} for {corridor}")
+                    break
+            except requests.exceptions.Timeout:
+                logger.warning(f"GDELT timeout for {corridor} (attempt {attempt + 1}); retrying…")
+                time.sleep(3.0)
+                continue
+            except Exception as e:
+                logger.error(f"Failed to fetch GDELT news for {corridor}: {e}")
+                break
         return []
 
-    def call_gemini_analysis(self, article: Dict[str, Any]) -> Dict[str, Any]:
-        """Invoke Gemini 2.5 Flash to analyze a news article and compute disruption parameters."""
+    def call_gemini_analysis(self, article: Dict[str, Any],
+                             hint_corridor: str = None,
+                             timestamp: str = None) -> Dict[str, Any]:
+        """Invoke Gemini to analyze a news article and compute disruption parameters.
+
+        ``hint_corridor`` is the choke point this article was surfaced for (the
+        region-targeted GDELT query it came from). It is treated as authoritative
+        for tagging so every monitored corridor gets its own live signals — Gemini
+        only scores the probability/type/summary. ``timestamp`` is the article's
+        real publish date (ISO); we fall back to now() if it is missing."""
         try:
             title = article.get("title", "")
             domain = article.get("domain", "")
             url = article.get("url", "")
-            
+            seendate = article.get("seendate", "")
+
+            corridor_line = (
+                f"This news concerns the {hint_corridor} region.\n"
+                if hint_corridor else ""
+            )
+
             prompt = f"""
             Analyze the following news item and evaluate its geopolitical risk impact on energy supply chains.
-            Specifically, determine:
-            1. Which shipping corridor/choke point is affected. Choose EXACTLY from: "Strait of Hormuz", "Bab-el-Mandeb", "Strait of Malacca", "Suez Canal", "Cape of Good Hope", "Panama Canal". If none are mentioned, map to the closest logical shipping pathway.
-            2. The Disruption Probability Score (integer, 0 to 100) reflecting the likelihood that crude shipments along this route are delayed, blocked, or rerouted.
-            3. The risk category: "Geopolitical", "Security", "Logistics", "Sanctions", or "Weather".
-            4. A concise 2-sentence summary detailing the operational impact of the risk.
+            {corridor_line}Specifically, determine:
+            1. The Disruption Probability Score (integer, 0 to 100) reflecting the likelihood that crude shipments along this route are delayed, blocked, or rerouted.
+            2. The risk category: "Geopolitical", "Security", "Logistics", "Sanctions", or "Weather".
+            3. A concise 2-sentence summary detailing the operational impact of the risk.
 
             News Item:
             Title: {title}
             Source Domain: {domain}
+            Published: {seendate}
             URL: {url}
 
             You MUST output the result in a raw JSON format exactly like this:
             {{
-                "corridor": "Affected Choke Point",
                 "probability": 75,
                 "type": "Risk Category",
                 "summary": "Your 2-sentence summary here."
             }}
             Do NOT wrap the JSON in ```json markdown blocks. Return only raw text.
             """
-            
+
             generation_config = {"responseMimeType": "application/json"}
             text = self.gemini_generate(prompt, timeout=12, generation_config=generation_config)
             if text and not text.startswith("ERROR:"):
                 # Clean the response in case it contains markdown formatting
                 text_clean = re.sub(r"^```json\s*", "", text, flags=re.IGNORECASE)
                 text_clean = re.sub(r"\s*```$", "", text_clean, flags=re.IGNORECASE).strip()
-                
+
                 parsed = json.loads(text_clean)
-                
-                # Double-check corridor names
-                valid_corridors = ["Strait of Hormuz", "Bab-el-Mandeb", "Strait of Malacca", "Suez Canal", "Cape of Good Hope", "Panama Canal"]
-                if parsed.get("corridor") not in valid_corridors:
-                    # Choose a sensible default based on keywords
-                    title_lower = title.lower()
-                    if "hormuz" in title_lower or "iran" in title_lower:
-                        parsed["corridor"] = "Strait of Hormuz"
-                    elif "houthi" in title_lower or "red sea" in title_lower or "yemen" in title_lower:
-                        parsed["corridor"] = "Bab-el-Mandeb"
-                    elif "suez" in title_lower or "egypt" in title_lower:
-                        parsed["corridor"] = "Suez Canal"
-                    elif "malacca" in title_lower or "singapore" in title_lower:
-                        parsed["corridor"] = "Strait of Malacca"
-                    elif "panama" in title_lower:
-                        parsed["corridor"] = "Panama Canal"
-                    else:
-                        parsed["corridor"] = random.choice(valid_corridors)
-                
+
+                # The corridor is fixed by the region query that surfaced this
+                # article, so each choke point reliably gets its own signals.
+                corridor = hint_corridor or "Strait of Hormuz"
+
                 return {
                     "id": f"sig-{random.randint(1000, 9999)}",
-                    "timestamp": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                    "corridor": parsed.get("corridor"),
+                    "timestamp": timestamp or datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "corridor": corridor,
                     "title": title,
                     "source": domain if domain else "GDELT News",
                     "url": url,
@@ -209,29 +294,71 @@ class RiskAgent:
         return None
 
     def update_signals(self) -> List[Dict[str, Any]]:
-        """Run the geopolitical agent flow: fetch news and extract risk signals."""
+        """Run the geopolitical agent flow: pull region-relevant news for every
+        choke point and have Gemini score the final disruption risk per item."""
+        # Skip if another update is already running (background loop + manual
+        # refresh) — hammering GDELT concurrently just earns 429s.
+        if not self._update_lock.acquire(blocking=False):
+            logger.info("Signal update already in progress; returning cached signals.")
+            return self.cached_signals
+        try:
+            return self._run_update()
+        finally:
+            self._update_lock.release()
+
+    def _run_update(self) -> List[Dict[str, Any]]:
         logger.info("Running Geopolitical Risk Agent signal update...")
         self.fetch_eia_prices()
-        
-        articles = self.fetch_gdelt_news()
-        new_signals = []
-        
-        # Analyze top 3 articles to save tokens and time
-        for art in articles[:3]:
-            signal = self.call_gemini_analysis(art)
-            if signal:
-                new_signals.append(signal)
-                
-        # Merge and keep unique signals sorted by timestamp
+
+        new_signals: List[Dict[str, Any]] = []
+
+        for idx, (corridor, query) in enumerate(CHOKE_POINT_QUERIES.items()):
+            # Space GDELT requests ~5s apart to stay under its rate limit.
+            if idx > 0:
+                time.sleep(5.0)
+            articles = self.fetch_choke_point_news(corridor, query, max_articles=5)
+            seen_titles = set()
+            analyzed = 0
+            for art in articles:
+                title = (art.get("title") or "").strip()
+                if not title or title in seen_titles:
+                    continue
+                seen_titles.add(title)
+                # Only keep genuinely recent news (within the last 5 days). Skip
+                # before spending a Gemini call on stale articles.
+                ts_iso, age_days = self._parse_article_date(art)
+                if age_days is not None and age_days > 5:
+                    continue
+                signal = self.call_gemini_analysis(
+                    art, hint_corridor=corridor, timestamp=ts_iso
+                )
+                # Count every Gemini call for cost control, but only keep signals
+                # whose final risk clears the noise threshold.
+                if signal:
+                    analyzed += 1
+                    if signal["probability"] >= MIN_SIGNAL_PROBABILITY:
+                        new_signals.append(signal)
+                # Cap Gemini calls at 2 per corridor to respect the rate limit.
+                if analyzed >= 2:
+                    break
+
+        # Merge fresh signals ahead of the cache, de-duplicating by title.
         if new_signals:
-            # Filter duplicates by title
-            titles = [s["title"] for s in new_signals]
-            self.cached_signals = new_signals + [s for s in self.cached_signals if s["title"] not in titles]
-            
-        # Keep list size capped
-        self.cached_signals = sorted(self.cached_signals, key=lambda x: x["timestamp"], reverse=True)[:12]
+            titles = {s["title"] for s in new_signals}
+            self.cached_signals = new_signals + [
+                s for s in self.cached_signals if s["title"] not in titles
+            ]
+
+        # Keep newest first and cap the list size.
+        self.cached_signals = sorted(
+            self.cached_signals, key=lambda x: x["timestamp"], reverse=True
+        )[:16]
         self.last_update = datetime.now()
-        
+
+        logger.info(
+            f"Risk signal update complete: {len(new_signals)} fresh, "
+            f"{len(self.cached_signals)} total cached."
+        )
         return self.cached_signals
 
     def get_latest_signals(self) -> List[Dict[str, Any]]:
@@ -247,6 +374,10 @@ class RiskAgent:
         fallbacks). For each model it retries on transient 429/5xx errors. Every
         HTTP status is logged to the console. Only returns the error string if
         every model and retry is exhausted."""
+        if not GEMINI_API_KEY:
+            logger.error("GEMINI_API_KEY environment variable is not set. Gemini API requests will fail.")
+            return "ERROR: Gemini API key is not configured."
+
         _rate_limiter.acquire()
 
         headers = {"Content-Type": "application/json"}

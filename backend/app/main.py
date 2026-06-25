@@ -7,6 +7,9 @@ from pydantic import BaseModel
 import logging
 from datetime import datetime
 from typing import List, Dict, Any, Optional
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from backend.app.services.ais import ais_service
 from backend.app.services.risk import risk_agent
@@ -15,6 +18,7 @@ from backend.app.services.orchestrator import procurement_orchestrator, REFINERY
 from backend.app.services.spr import spr_optimizer
 from backend.app.services.graph import graph_service
 from backend.app.services.currency import currency_service
+from backend.app.services.digital_twin import digital_twin_service
 
 # Logging Setup
 logging.basicConfig(level=logging.INFO)
@@ -724,6 +728,22 @@ def get_scenario_governance(req: GovernanceRequest):
         "governance": text, "severity": severity, "spr": spr,
         "shortage_unavoidable": shortage_unavoidable, "shortage_reality": shortage_reality,
     }
+
+class SupplyChainSimulateRequest(BaseModel):
+    scenario: str
+
+@app.get("/api/supply-chain/infrastructure")
+def get_supply_chain_infrastructure():
+    """Get India energy supply chain nodes and links."""
+    return digital_twin_service.get_infrastructure()
+
+@app.post("/api/supply-chain/simulate")
+def simulate_supply_chain(req: SupplyChainSimulateRequest):
+    """Run the digital twin grid simulation on a natural-language scenario."""
+    try:
+        return digital_twin_service.simulate_twin_scenario(req.scenario)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # --- WebSocket server endpoint ---
 @app.websocket("/ws")

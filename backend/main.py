@@ -4,6 +4,10 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from ais_client import stream_manager
 from choke_points import CHOKE_POINTS
 

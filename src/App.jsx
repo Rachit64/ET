@@ -13,8 +13,9 @@ import { useScenario } from "./hooks/useScenario";
 import {
   Shield, Radio, ShieldAlert, TrendingUp, Calendar, AlertTriangle, Zap,
   Compass, Network, MessageSquare, Info, X, ChevronLeft, ChevronRight,
-  Terminal, LayoutList
+  Terminal, LayoutList, Activity
 } from "lucide-react";
+import SupplyChainTwin from "./components/SupplyChainTwin";
 
 const CORRIDOR_MAPPINGS = {
   strait_of_hormuz: "Strait of Hormuz",
@@ -163,17 +164,21 @@ export default function App() {
 
         {/* ── LEFT SIDEBAR ────────────────────────────────────────────────── */}
         <aside
-          className="relative flex shrink-0 h-full border-r border-slate-800/80 bg-slate-950/40 transition-[width] duration-200"
-          style={{ width: sidebarCollapsed ? 44 : sidebarWidth }}
+          className={`relative flex shrink-0 h-full border-r border-slate-800/80 bg-slate-950/40 transition-[width] duration-200 ${
+            activeTab === "supply-chain" ? "border-r-0 overflow-hidden" : ""
+          }`}
+          style={{ width: activeTab === "supply-chain" ? 0 : (sidebarCollapsed ? 44 : sidebarWidth) }}
         >
           {/* Collapse toggle strip */}
-          <button
-            onClick={() => setSidebarCollapsed(v => !v)}
-            className="absolute -right-3 top-1/2 -translate-y-1/2 z-20 w-6 h-10 flex items-center justify-center bg-slate-900 border border-slate-700 rounded-full text-slate-400 hover:text-cyan-400 hover:border-cyan-700 transition-all cursor-pointer shadow-lg"
-            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {sidebarCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
-          </button>
+          {activeTab !== "supply-chain" && (
+            <button
+              onClick={() => setSidebarCollapsed(v => !v)}
+              className="absolute -right-3 top-1/2 -translate-y-1/2 z-20 w-6 h-10 flex items-center justify-center bg-slate-900 border border-slate-700 rounded-full text-slate-400 hover:text-cyan-400 hover:border-cyan-700 transition-all cursor-pointer shadow-lg"
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {sidebarCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+            </button>
+          )}
 
           {sidebarCollapsed ? (
             /* Collapsed: icon-only vertical tab strip */
@@ -296,10 +301,11 @@ export default function App() {
           {/* Center tab nav */}
           <div className="h-11 border-b border-slate-800 bg-slate-950 flex items-center px-3 space-x-0.5 shrink-0">
             {[
-              { id: "map",      icon: <Compass className="w-3.5 h-3.5" />,       label: "Live Operations Map" },
-              { id: "scenario", icon: <Zap className="w-3.5 h-3.5" />,           label: "Scenario Lab"       },
-              { id: "graph",    icon: <Network className="w-3.5 h-3.5" />,       label: "Knowledge Graph"    },
-              { id: "chat",     icon: <MessageSquare className="w-3.5 h-3.5" />, label: "Chat Copilot"       },
+              { id: "map",          icon: <Compass className="w-3.5 h-3.5" />,       label: "Live Operations Map" },
+              { id: "scenario",     icon: <Zap className="w-3.5 h-3.5" />,           label: "Scenario Lab"       },
+              { id: "supply-chain", icon: <Activity className="w-3.5 h-3.5" />,      label: "Supply Chain Digital Twin" },
+              { id: "graph",        icon: <Network className="w-3.5 h-3.5" />,       label: "Knowledge Graph"    },
+              { id: "chat",         icon: <MessageSquare className="w-3.5 h-3.5" />, label: "Chat Copilot"       },
             ].map(t => (
               <button
                 key={t.id}
@@ -357,6 +363,7 @@ export default function App() {
             {activeTab === "scenario" && (
               <ScenarioLab scenario={scenario} ships={ships} chokePoints={CHOKE_POINTS} />
             )}
+            {activeTab === "supply-chain" && <SupplyChainTwin />}
             {activeTab === "graph"    && <KnowledgeGraphView />}
             {activeTab === "chat"     && <ChatCopilot />}
           </div>

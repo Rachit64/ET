@@ -14,8 +14,10 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger("AISClient")
 
 AIS_STREAM_URL = "wss://stream.aisstream.io/v0/stream"
-DEFAULT_API_KEY = "faa077e2e9c38a35328d3606443fef09c33f22b5"
-API_KEY = os.getenv("AISSTREAM_API_KEY", DEFAULT_API_KEY)
+API_KEY = os.getenv("AISSTREAM_API_KEY")
+
+if not API_KEY:
+    logger.warning("AISSTREAM_API_KEY environment variable is not set. Live AIS stream will be unavailable.")
 
 class AISClientManager:
     def __init__(self):

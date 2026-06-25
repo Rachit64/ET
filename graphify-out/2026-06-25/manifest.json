@@ -5,24 +5,24 @@
     "semantic_hash": "5e6e3cea3e89137071c142dd7835b0ef"
   },
   "backend/ais_client.py": {
-    "mtime": 1782390724.803853,
-    "ast_hash": "f7b987159d6c4e7824fe8fd7983c59b4",
-    "semantic_hash": "f7b987159d6c4e7824fe8fd7983c59b4"
+    "mtime": 1782282272.6267152,
+    "ast_hash": "77b2b41400599614eb778f6376805d68",
+    "semantic_hash": "77b2b41400599614eb778f6376805d68"
   },
   "backend/app/main.py": {
-    "mtime": 1782390754.715212,
-    "ast_hash": "7993ad930e9107d37229ca58ee1116d1",
-    "semantic_hash": "7993ad930e9107d37229ca58ee1116d1"
+    "mtime": 1782357674.1634498,
+    "ast_hash": "83f100b213c664be297fadcb4ee811ec",
+    "semantic_hash": "83f100b213c664be297fadcb4ee811ec"
   },
   "backend/app/services/ais.py": {
-    "mtime": 1782390730.9870195,
-    "ast_hash": "78bfcc27107b38638333a3f4fe769c44",
-    "semantic_hash": "78bfcc27107b38638333a3f4fe769c44"
+    "mtime": 1782282250.8831592,
+    "ast_hash": "18667803dae632b33337043f5d23731c",
+    "semantic_hash": "18667803dae632b33337043f5d23731c"
   },
   "backend/app/services/graph.py": {
-    "mtime": 1782390747.9562142,
-    "ast_hash": "eeb0140ea91fa4d8e0ec90a8976dda80",
-    "semantic_hash": "eeb0140ea91fa4d8e0ec90a8976dda80"
+    "mtime": 1782282299.8883183,
+    "ast_hash": "c644fdf5bbfeac495fefd61770a9105c",
+    "semantic_hash": "c644fdf5bbfeac495fefd61770a9105c"
   },
   "backend/app/services/orchestrator.py": {
     "mtime": 1782292014.4359918,
@@ -30,9 +30,9 @@
     "semantic_hash": "79456fc5de812fa880238d4f1d00f8c9"
   },
   "backend/app/services/risk.py": {
-    "mtime": 1782390740.2180388,
-    "ast_hash": "2083e1b5d5d06d933f6e3941867c5469",
-    "semantic_hash": "2083e1b5d5d06d933f6e3941867c5469"
+    "mtime": 1782364286.730814,
+    "ast_hash": "ac64fcad2f50e09ebe528055e46fcc6d",
+    "semantic_hash": ""
   },
   "backend/app/services/scenarios.py": {
     "mtime": 1782282271.405039,
@@ -50,9 +50,9 @@
     "semantic_hash": "08b1ce77e9ede0f0a6bc703b3347b740"
   },
   "backend/main.py": {
-    "mtime": 1782390759.8769953,
-    "ast_hash": "bfee49581b13a0411e5d0e41e60497b4",
-    "semantic_hash": "bfee49581b13a0411e5d0e41e60497b4"
+    "mtime": 1782282279.313703,
+    "ast_hash": "9bbcc9054b44bea9c358566485d52084",
+    "semantic_hash": "9bbcc9054b44bea9c358566485d52084"
   },
   "frontend/src/App.jsx": {
     "mtime": 1782282407.9205854,
@@ -112,7 +112,7 @@
   "src/components/RiskSignalFeed.jsx": {
     "mtime": 1782362783.435419,
     "ast_hash": "1bc3242d64b32e1cdb4041a492e72e30",
-    "semantic_hash": "1bc3242d64b32e1cdb4041a492e72e30"
+    "semantic_hash": ""
   },
   "src/components/ScenarioLab.jsx": {
     "mtime": 1782322387.3655295,
@@ -137,7 +137,7 @@
   "start.sh": {
     "mtime": 1782363174.7178845,
     "ast_hash": "a0e8099f7b0d2e0dc16f2ed763f62dfa",
-    "semantic_hash": "a0e8099f7b0d2e0dc16f2ed763f62dfa"
+    "semantic_hash": ""
   },
   "vite.config.js": {
     "mtime": 1782283279.8538165,
@@ -212,7 +212,7 @@
   ".claude/settings.local.json": {
     "mtime": 1782365695.2717745,
     "ast_hash": "e341c301a84837e37f15958aab5b6518",
-    "semantic_hash": "e341c301a84837e37f15958aab5b6518"
+    "semantic_hash": ""
   },
   "backend/app/services/digital_twin.py": {
     "mtime": 1782358400.2869241,
@@ -222,7 +222,7 @@
   "src/components/SupplyChainTwin.jsx": {
     "mtime": 1782366978.5885143,
     "ast_hash": "d52ca90dd2dfe70e0173666920738522",
-    "semantic_hash": "d52ca90dd2dfe70e0173666920738522"
+    "semantic_hash": ""
   },
   "backend/app/services/osm_cache.json": {
     "mtime": 1782358393.1659908,

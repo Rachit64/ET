@@ -18,7 +18,15 @@
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('severity:',d['severity'],'| vol:',d['impact']['volume_at_risk_pct'],'| unavoidable:',d['shortage']['unavoidable']\\); print\\('reality:',d['shortage']['reality'][:120]\\)\")",
       "Bash(curl -s -X POST localhost:8000/api/scenario/governance -H 'Content-Type: application/json' -d '{\"ctx\":{\"dynamic\":true,\"summary\":\"Saudi export collapse\",\"severity\":\"critical\",\"volume_at_risk_pct\":28.5,\"price_increase_bbl\":45,\"fuel_price_rise_pct\":40,\"power_stress_pct\":70,\"gdp_delta_pct\":-1.2,\"cpi_delta_pct\":3.0,\"shortage_reality\":\"India cannot replace lost supply\",\"shortage_unavoidable\":true}}')",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('severity:',d['severity'],'| unavoidable:',d['shortage_unavoidable']\\); print\\('headings:',[l for l in d['governance'].split\\(chr\\(10\\)\\) if l.startswith\\('##'\\)]\\)\")",
-      "Bash(timeout 180 npx vite build)"
+      "Bash(timeout 180 npx vite build)",
+      "Bash(rtk ls *)",
+      "Bash(rtk grep *)",
+      "Bash(python3 -m py_compile backend/app/services/risk.py)",
+      "Bash(PYTHONPATH=. nohup uvicorn backend.app.main:app --host 0.0.0.0 --port 8000)",
+      "Bash(echo \"launched pid $!\")",
+      "Skill(update-config)",
+      "Bash(gh repo *)",
+      "Bash(gh api *)"
     ]
   }
 }

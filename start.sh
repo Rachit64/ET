@@ -13,7 +13,7 @@ PYTHONPATH=. uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload &
 
 # Start Frontend Dev Server
 echo "-> Launching React Frontend on http://localhost:5173..."
-npm run dev -- --port 5173 &
+npm run dev -- --force --port 5173 &
 
 # Wait for both processes
 wait

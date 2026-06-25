@@ -4,7 +4,11 @@ import logging
 import random
 import time
 import math
+import os
 from typing import Dict, List, Any
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Predefined waypoints for shipping corridors to Indian refineries
 # Coordinates: [lon, lat] - GeoJSON standard is [lon, lat]
@@ -74,7 +78,7 @@ class AISService:
         self.vessels: List[Dict[str, Any]] = []
         self.live_connected = False
         self.simulation_mode = True # Default fallback to simulation
-        self.api_key = "faa077e2e9c38a35328d3606443fef09c33f22b5"
+        self.api_key = os.getenv("AISSTREAM_API_KEY")
         self._init_simulated_vessels()
         self.loop_task = None
 
@@ -229,8 +233,14 @@ class AISService:
     async def connect_live_ais(self):
         """
         Background task to connect to aisstream.io WebSockets.
-        If it fails, automatically switches simulation_mode to True.
+        If it fails or is not configured, automatically switches simulation_mode to True.
         """
+        if not self.api_key:
+            logger.warning("AISSTREAM_API_KEY is not set. Live AIS stream is disabled; running in simulation mode.")
+            self.live_connected = False
+            self.simulation_mode = True
+            return
+
         import websockets
         
         # Connect to stream

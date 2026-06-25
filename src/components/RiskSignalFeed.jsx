@@ -1,125 +1,91 @@
-import React, { useEffect, useState } from "react";
-import { AlertTriangle, ShieldAlert, DollarSign, Activity, FileText } from "lucide-react";
+import React, { useEffect, useState, useCallback } from "react";
+import {
+  AlertTriangle, ShieldAlert, DollarSign, Activity, FileText,
+  CloudRain, RefreshCw, Loader2
+} from "lucide-react";
 
-// Mock database of signals by chokepoint
-const SIGNALS_DB = {
-  strait_of_hormuz: [
-    {
-      id: "sh-1",
-      type: "geopolitical",
-      title: "Iran Naval Drill in Strait Entrance",
-      desc: "Revolutionary Guard announces sudden 48-hour live-fire drills starting tonight.",
-      score: 82,
-      time: "2 mins ago",
-      icon: ShieldAlert
-    },
-    {
-      id: "sh-2",
-      type: "ais",
-      title: "AIS Anomaly: VLCC Loitering",
-      desc: "Supertanker 'AL-HORMUZ' (MMSI: 235098234) running dark, loitering 4nm off corridor path.",
-      score: 74,
-      time: "15 mins ago",
-      icon: Activity
-    },
-    {
-      id: "sh-3",
-      type: "commodity",
-      title: "Brent Premium Spike",
-      desc: "Middle East logistics risk premium adds +$1.85/bbl in Singapore spot markets.",
-      score: 68,
-      time: "1 hour ago",
-      icon: DollarSign
-    },
-    {
-      id: "sh-4",
-      type: "sanctions",
-      title: "OFAC Blacklists Tanker Fleet",
-      desc: "3 chemical tankers frequently transiting Hormuz added to US SDN sanctions list.",
-      score: 89,
-      time: "2 hours ago",
-      icon: FileText
-    }
-  ],
-  bab_el_mandeb: [
-    {
-      id: "bm-1",
-      type: "geopolitical",
-      title: "Drone Attack Warning",
-      desc: "UKMTO issues advisory warning of suspected UAV activity 30nm southwest of Mokha.",
-      score: 88,
-      time: "5 mins ago",
-      icon: ShieldAlert
-    },
-    {
-      id: "bm-2",
-      type: "ais",
-      title: "Mass AIS Spoofing Detected",
-      desc: "Multiple vessels reporting identical GPS coordinates near Bab el-Mandeb chokepoint.",
-      score: 67,
-      time: "32 mins ago",
-      icon: Activity
-    },
-    {
-      id: "bm-3",
-      type: "commodity",
-      title: "Insurance War-Risk Premium Hike",
-      desc: "Lloyd's underwriters increase Red Sea transit premium by 0.5% of hull value.",
-      score: 80,
-      time: "2 hours ago",
-      icon: DollarSign
-    }
-  ],
-  suez_canal: [
-    {
-      id: "sc-1",
-      type: "ais",
-      title: "Suez Canal Congestion Peak",
-      desc: "Southbound convoy delayed by 4 hours due to minor mechanical failure of cargo vessel.",
-      score: 45,
-      time: "12 mins ago",
-      icon: Activity
-    },
-    {
-      id: "sc-2",
-      type: "geopolitical",
-      title: "Suez Canal Toll Adjustment",
-      desc: "SCA announces 8% increase in transit fees for crude tankers starting next month.",
-      score: 38,
-      time: "3 hours ago",
-      icon: FileText
-    }
-  ],
-  strait_of_malacca: [
-    {
-      id: "sm-1",
-      type: "geopolitical",
-      title: "Armed Robbery Attempt Reported",
-      desc: "Reconnaissance vessel reports attempt on container ship in Eastbound lane near Singapore Strait.",
-      score: 54,
-      time: "45 mins ago",
-      icon: ShieldAlert
-    },
-    {
-      id: "sm-2",
-      type: "ais",
-      title: "Haze Causes Visibility Restrictions",
-      desc: "Sumatran agricultural burns drop visibility below 2nm, triggering speed restrictions.",
-      score: 32,
-      time: "1 hour ago",
-      icon: Activity
-    }
-  ]
+const API_BASE = "http://localhost:8000";
+const POLL_MS = 45000;
+
+// Maps the App's choke-point key onto the corridor name the backend tags
+// signals with (see CHOKE_POINT_QUERIES in backend/app/services/risk.py).
+const CORRIDOR_NAMES = {
+  strait_of_hormuz: "Strait of Hormuz",
+  bab_el_mandeb: "Bab-el-Mandeb",
+  suez_canal: "Suez Canal",
+  strait_of_malacca: "Strait of Malacca",
 };
 
-export default function RiskSignalFeed({ selectedChokePoint }) {
-  const [signals, setSignals] = useState([]);
+// Risk category -> icon. Backend emits Geopolitical / Security / Logistics /
+// Sanctions / Weather; we keep a couple of legacy aliases too.
+const TYPE_ICONS = {
+  Geopolitical: ShieldAlert,
+  Security: ShieldAlert,
+  Sanctions: FileText,
+  Logistics: Activity,
+  Weather: CloudRain,
+  Commodity: DollarSign,
+};
 
+function iconForType(type) {
+  return TYPE_ICONS[type] || Activity;
+}
+
+function timeAgo(ts) {
+  if (!ts) return "";
+  const then = new Date(ts).getTime();
+  if (Number.isNaN(then)) return "";
+  const diff = Math.max(0, Date.now() - then);
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min${mins > 1 ? "s" : ""} ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr${hrs > 1 ? "s" : ""} ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days} day${days > 1 ? "s" : ""} ago`;
+}
+
+export default function RiskSignalFeed({ selectedChokePoint }) {
+  const [allSignals, setAllSignals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(null);
+
+  const corridorName = CORRIDOR_NAMES[selectedChokePoint];
+
+  const fetchSignals = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/signals`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setAllSignals(Array.isArray(data.signals) ? data.signals : []);
+      setLastUpdate(data.last_update || new Date().toISOString());
+      setError(false);
+    } catch (e) {
+      console.error("Failed to load risk signals:", e);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Poll the live agent feed.
   useEffect(() => {
-    // Load signals for the selected choke point
-    const rawSignals = SIGNALS_DB[selectedChokePoint] || [];
-    setSignals(rawSignals);
-  }, [selectedChokePoint]);
+    fetchSignals();
+    const id = setInterval(fetchSignals, POLL_MS);
+    return () => clearInterval(id);
+  }, [fetchSignals]);
+
+  // Filter to the corridor in focus, keep only news from the last 5 days,
+  // newest first.
+  const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
+  const signals = allSignals
+    .filter((s) => s.corridor === corridorName)
+    .filter((s) => {
+      const t = new Date(s.timestamp).getTime();
+      return Number.isNaN(t) || Date.now() - t <= FIVE_DAYS_MS;
+    })
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
   const getScoreColor = (score) => {
     if (score >= 75) return "text-red-500 border-red-500/30 bg-red-950/20";
@@ -135,29 +101,61 @@ export default function RiskSignalFeed({ selectedChokePoint }) {
           <AlertTriangle className="w-5 h-5 text-amber-500" />
           <h2 className="font-bold text-slate-100 tracking-wide text-sm uppercase">Risk Signal Feed</h2>
         </div>
-        <span className="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full font-mono">
-          LIVE
-        </span>
+        <div className="flex items-center space-x-2">
+          {lastUpdate && !error && (
+            <span className="text-[9px] text-slate-500 font-mono">
+              {timeAgo(lastUpdate)}
+            </span>
+          )}
+          <button
+            onClick={fetchSignals}
+            title="Refresh signals"
+            className="text-slate-500 hover:text-cyan-400 transition-colors cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+          </button>
+          <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono flex items-center space-x-1 ${
+            error
+              ? "text-red-400 bg-red-950/40"
+              : "text-emerald-400 bg-emerald-950/40"
+          }`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${error ? "bg-red-500" : "bg-emerald-500 animate-pulse"}`} />
+            <span>{error ? "OFFLINE" : "LIVE"}</span>
+          </span>
+        </div>
       </div>
 
       {/* List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {signals.length === 0 ? (
+        {loading && signals.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-slate-500 space-y-2 text-center p-4">
+            <Loader2 className="w-8 h-8 opacity-30 animate-spin" />
+            <p className="text-xs">Loading live intelligence feed…</p>
+          </div>
+        ) : signals.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-slate-500 space-y-2 text-center p-4">
             <ShieldAlert className="w-8 h-8 opacity-20" />
-            <p className="text-xs">No active disruption signals in this corridor.</p>
+            <p className="text-xs">
+              {error
+                ? "Signal feed unreachable. Retrying…"
+                : "No active disruption signals in this corridor."}
+            </p>
           </div>
         ) : (
           signals.map((sig) => {
-            const Icon = sig.icon;
+            const Icon = iconForType(sig.type);
+            const score = Number(sig.probability) || 0;
             return (
-              <div 
-                key={sig.id} 
-                className="p-3 bg-slate-900/40 hover:bg-slate-900/80 border border-slate-800/80 hover:border-slate-700/80 rounded-lg transition-all duration-200 flex flex-col space-y-2 relative overflow-hidden group"
+              <a
+                key={sig.id}
+                href={sig.url || "#"}
+                target={sig.url ? "_blank" : undefined}
+                rel="noreferrer"
+                className="p-3 bg-slate-900/40 hover:bg-slate-900/80 border border-slate-800/80 hover:border-slate-700/80 rounded-lg transition-all duration-200 flex flex-col space-y-2 relative overflow-hidden group cursor-pointer block"
               >
                 {/* Accent glow on hover */}
                 <div className="absolute top-0 left-0 w-[2px] h-full bg-slate-800 group-hover:bg-cyan-500 transition-all duration-300"></div>
-                
+
                 <div className="flex justify-between items-start pl-1">
                   <div className="flex items-center space-x-2">
                     <div className="p-1.5 rounded-md bg-slate-800 text-slate-300">
@@ -167,8 +165,8 @@ export default function RiskSignalFeed({ selectedChokePoint }) {
                       {sig.type}
                     </span>
                   </div>
-                  <div className={`px-2 py-0.5 border text-[10px] rounded font-mono font-semibold ${getScoreColor(sig.score)}`}>
-                    DP: {sig.score}
+                  <div className={`px-2 py-0.5 border text-[10px] rounded font-mono font-semibold ${getScoreColor(score)}`}>
+                    DP: {score}
                   </div>
                 </div>
 
@@ -177,16 +175,19 @@ export default function RiskSignalFeed({ selectedChokePoint }) {
                     {sig.title}
                   </h4>
                   <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                    {sig.desc}
+                    {sig.summary}
                   </p>
                 </div>
 
-                <div className="flex justify-end pt-1 pl-1 border-t border-slate-900/60">
+                <div className="flex justify-between items-center pt-1 pl-1 border-t border-slate-900/60">
+                  <span className="text-[9px] text-slate-500 font-mono uppercase tracking-wider truncate max-w-[55%]">
+                    {sig.source}
+                  </span>
                   <span className="text-[9px] text-slate-500 font-mono">
-                    {sig.time}
+                    {timeAgo(sig.timestamp)}
                   </span>
                 </div>
-              </div>
+              </a>
             );
           })
         )}
